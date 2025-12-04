@@ -1,77 +1,31 @@
-'''Data loader & preprocessing utilities'''
-
 import torch
-from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
+from torch.utils.data import DataLoader, random_split
 import os
-import random
-import numpy as np
 
-
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-
-def get_dataloaders(dataset_name="fashion-mnist",
-                    data_dir="data/raw",
-                    batch_size=64,
-                    val_split=0.15,
-                    test_split=0.15,
-                    num_workers=2,
-                    resize=None,
-                    seed=42):
+def get_data_loaders(batch_size=64, data_dir='./data', val_split=0.1, num_workers=0, pin_memory=False):
     """
-    Returns: train_loader, val_loader, test_loader, classes
+    Downloads Fashion-MNIST and returns train, val, and test dataloaders.
     """
-    set_seed(seed)
-
-    os.makedirs(data_dir, exist_ok=True)
-
-    # transforms: normalize to mean/std recommended for grayscale
-    transform_list = []
-    if resize:
-        transform_list.append(transforms.Resize(resize))
-    transform_list += [
+    
+    # Define transforms
+    transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))  # scale to [-1,1]
-    ]
-    transform = transforms.Compose(transform_list)
+        transforms.Normalize((0.5,), (0.5,)) # Normalize to [-1, 1]
+    ])
 
-    if dataset_name.lower() in ["fashion-mnist", "fashion_mnist"]:
-        full_train = datasets.FashionMNIST(
-            root=data_dir, train=True, download=True, transform=transform)
-        test_set = datasets.FashionMNIST(
-            root=data_dir, train=False, download=True, transform=transform)
-        classes = full_train.classes
-    elif dataset_name.lower() in ["mnist", "mnist"]:
-        full_train = datasets.MNIST(
-            root=data_dir, train=True, download=True, transform=transform)
-        test_set = datasets.MNIST(
-            root=data_dir, train=False, download=True, transform=transform)
-        classes = full_train.classes
-    else:
-        raise ValueError(
-            "Unsupported dataset. Use 'fashion-mnist' or 'mnist' for now.")
+    # Load datasets
+    full_train_dataset = datasets.FashionMNIST(root=data_dir, train=True, download=True, transform=transform)
+    test_dataset = datasets.FashionMNIST(root=data_dir, train=False, download=True, transform=transform)
 
-    # create train/val split from full_train
-    n_total = len(full_train)
-    n_test = len(test_set)
-    n_val = int(n_total * val_split)
-    n_train = n_total - n_val
+    # Split train into train and val
+    val_size = int(len(full_train_dataset) * val_split)
+    train_size = len(full_train_dataset) - val_size
+    train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
 
-    train_set, val_set = random_split(full_train, [n_train, n_val],
-                                      generator=torch.Generator().manual_seed(seed))
+    # Create dataloaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
 
-    # DataLoaders
-    train_loader = DataLoader(train_set, batch_size=batch_size,
-                              shuffle=True, num_workers=num_workers, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size,
-                            shuffle=False, num_workers=num_workers, pin_memory=True)
-    test_loader = DataLoader(test_set, batch_size=batch_size,
-                             shuffle=False, num_workers=num_workers, pin_memory=True)
-
-    return train_loader, val_loader, test_loader, classes
+    return train_loader, val_loader, test_loader
