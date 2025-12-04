@@ -9,10 +9,13 @@ from src.models.nn_model import MLP
 from src.utils.data_loader import get_data_loaders
 from src.utils.helpers import set_seed, setup_logger
 
-def train_final_model(hyperparams, model_type='cnn', epochs=10, device='cuda', save_path='results/final_model.pth'):
+def train_final_model(hyperparams, model_type='cnn', epochs=10, device=None, save_path='results/final_model.pth'):
     """
     Trains the final model with the best hyperparameters.
     """
+    if device is None:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {device}")
     set_seed(42)
     
     # Data

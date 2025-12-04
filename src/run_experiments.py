@@ -48,6 +48,7 @@ def run_experiment(optimizer_name, model_type, pop_size, max_iter, search_space=
         raise ValueError(f"Optimizer {optimizer_name} not found.")
         
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {device}")
     
     best_solution, history = optimizer.optimize(
         objective_fn,

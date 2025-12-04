@@ -1,0 +1,13 @@
+{
+    "lr": 0.0007705334797244552,
+    "batch_size": 32,
+    "dropout": 0.18564402172478045,
+    "conv1_out": 32,
+    "kernel1": 5,
+    "conv2_out": 128,
+    "kernel2": 5,
+    "fc1_out": 64,
+    "hidden1": 64,
+    "hidden2": 128,
+    "optimizer": "adam"
+}
