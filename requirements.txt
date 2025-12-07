@@ -5,3 +5,8 @@ matplotlib
 pandas
 tqdm
 jupyter
+streamlit
+plotly
+altair
+python-docx
+watchdog
