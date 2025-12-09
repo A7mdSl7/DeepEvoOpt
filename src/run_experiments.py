@@ -38,17 +38,24 @@ DEFAULT_SEARCH_SPACE = {
 }
 
 def run_experiment(optimizer_name, model_type, pop_size, max_iter, search_space=None):
+    import sys
+    
     if search_space is None:
         search_space = DEFAULT_SEARCH_SPACE
         
-    print(f"Running {optimizer_name.upper()} on {model_type}...")
+    print(f"Running {optimizer_name.upper()} on {model_type}...", flush=True)
+    sys.stdout.flush()
     
     optimizer = OPTIMIZERS.get(optimizer_name.lower())
     if not optimizer:
         raise ValueError(f"Optimizer {optimizer_name} not found.")
         
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Using device: {device}")
+    print(f"Using device: {device}", flush=True)
+    sys.stdout.flush()
+    
+    print(f"Starting optimization with pop_size={pop_size}, max_iter={max_iter}...", flush=True)
+    sys.stdout.flush()
     
     best_solution, history = optimizer.optimize(
         objective_fn,
@@ -63,15 +70,22 @@ def run_experiment(optimizer_name, model_type, pop_size, max_iter, search_space=
     os.makedirs('results/logs', exist_ok=True)
     
     # Save best
-    with open(f'results/logs/{optimizer_name}_{model_type}_best.json', 'w') as f:
+    best_file = f'results/logs/{optimizer_name}_{model_type}_best.json'
+    with open(best_file, 'w') as f:
         json.dump(best_solution, f, indent=4)
+    print(f"Saved best parameters to: {best_file}", flush=True)
+    sys.stdout.flush()
         
     # Save history
+    history_file = f'results/logs/{optimizer_name}_{model_type}_history.csv'
     df = pd.DataFrame(history, columns=['iteration', 'val_loss'])
-    df.to_csv(f'results/logs/{optimizer_name}_{model_type}_history.csv', index=False)
+    df.to_csv(history_file, index=False)
+    print(f"Saved history to: {history_file}", flush=True)
+    sys.stdout.flush()
     
-    print(f"Optimization finished. Best Loss: {history[-1][1]}")
-    print(f"Best Hyperparams: {best_solution}")
+    print(f"Optimization finished. Best Loss: {history[-1][1]:.6f}", flush=True)
+    print(f"Best Hyperparams: {best_solution}", flush=True)
+    sys.stdout.flush()
     
     return best_solution
 

@@ -10,22 +10,29 @@ def plot_convergence(histories, optimizers):
     histories: list of DataFrames
     optimizers: list of optimizer names corresponding to histories
     """
-    if not histories:
+    if not histories or not optimizers:
         return None
 
     fig = go.Figure()
+    has_data = False
 
     for df, opt in zip(histories, optimizers):
         if df is None or df.empty:
             continue
+        if 'iteration' not in df.columns or 'val_loss' not in df.columns:
+            continue
             
+        has_data = True
         fig.add_trace(go.Scatter(
             x=df['iteration'],
             y=df['val_loss'],
             mode='lines+markers',
             name=opt,
-            hovertemplate=f"<b>{opt}</b><br>Iter: %{{x}}<br>Msg: %{{y:.4f}}<extra></extra>"
+            hovertemplate=f"<b>{opt}</b><br>Iter: %{{x}}<br>Loss: %{{y:.4f}}<extra></extra>"
         ))
+
+    if not has_data:
+        return None
 
     fig.update_layout(
         title="Convergence Plot (Validation Loss)",
@@ -33,7 +40,8 @@ def plot_convergence(histories, optimizers):
         yaxis_title="Validation Loss",
         legend_title="Optimizer",
         hovermode="x unified",
-        template="plotly_white"
+        template="plotly_white",
+        height=500
     )
     
     return fig
@@ -47,16 +55,27 @@ def plot_distribution(best_losses, optimizers):
     # Create a DataFrame for plotting
     data = []
     for loss, opt in zip(best_losses, optimizers):
-        if loss is not None:
-             data.append({'Optimizer': opt, 'Best Loss': loss})
+        if loss is not None and not pd.isna(loss):
+             data.append({'Optimizer': opt, 'Best Loss': float(loss)})
+    
+    if not data:
+        return None
     
     df = pd.DataFrame(data)
     
     if df.empty:
         return None
-        
-    fig = px.box(df, x='Optimizer', y='Best Loss', points="all", title="Best Loss Distribution")
-    fig.update_layout(template="plotly_white")
+    
+    # Use bar chart instead of box plot for single values
+    fig = px.bar(df, x='Optimizer', y='Best Loss', title="Best Loss Comparison", 
+                 color='Best Loss', color_continuous_scale='RdYlGn_r')
+    fig.update_layout(
+        template="plotly_white",
+        height=400,
+        xaxis_title="Optimizer",
+        yaxis_title="Best Validation Loss"
+    )
+    fig.update_traces(texttemplate='%{y:.4f}', textposition='outside')
     return fig
 
 def plot_confusion_matrix(cm, labels=None):
